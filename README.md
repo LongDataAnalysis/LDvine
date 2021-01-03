@@ -27,7 +27,7 @@ The repository is structured as follows:
 
 - `src`: Contains R functions (.R) that implement the methods in this R project. 
 
-- `examples`: Contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains several sub-folders:	
+- `examples`: Contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains two sub-folders:	
 
 	- `Simulation`: this sub-folder contains .Rmd files with the complied pdf versions for simulation study.
 RMarkdown files: The R-code for the simulation example is in the R Markdown file "LD-vine_Sim.Rmd" 
