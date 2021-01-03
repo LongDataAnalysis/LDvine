@@ -17,9 +17,9 @@ library(VineCopula) # required to work with D-vine copulas
 ```
 
 ```{r, echo=FALSE}
-# Load the auxiliary functions located in 'R' folder which is
+# Load the auxiliary functions located in 'src' folder which is
 # needed to generate data
-source(here::here("SCRIPT", "R", "LDvine.aux.R"))
+source(here::here("src", "LDvine.aux.R"))
 ```
 
 # Simulation Example: Time-heterogeneous D-vine copula under DGP4
@@ -62,8 +62,8 @@ Full.data <- data.frame(t(sapply(1:n, function(i)  LDVine.Sim(d, Family,
                                                         Par.Array[,,i]))))
 colnames(Full.data) <- c("U1","U2","U3","U4","U5")
 
-# Save the generated data in "OUTPUT" folder 
-save(Full.data,file=here::here("DATA","DGP4-n250.Rdata"))
+# Save the generated data in "results" folder 
+save(Full.data,file=here::here("data","DGP4-n250.Rdata"))
 
 ###########################################################################
 # Obtain unbalanced data from the balanced data
@@ -89,8 +89,8 @@ for (i in 1:d){
 }
 ind.num
 
-# Save the unbalanced data in "OUTPUT" folder 
-save(U.RM,file=here("DATA","Unbal-DGP4-n250.Rdata"))
+# Save the unbalanced data in "results" folder 
+save(U.RM,file=here("data","Unbal-DGP4-n250.Rdata"))
 ```
 
 # D-vine copula model fitting
@@ -156,10 +156,10 @@ To fit the HET--P model, we first calculate time interval between two measuremen
 
 ```{r, echo=FALSE}
 ## FUNCTIONS EVALUATION
-# Load the auxiliary functions located in 'R' folder which are 
+# Load the auxiliary functions located in 'src' folder which are 
 # needed to fit the HET-P model
-source(here::here("SCRIPT", "R", "LBiCopFit.R"))
-source(here::here("SCRIPT", "R", "LBiCopLLik.R"))
+source(here::here("src", "LBiCopFit.R"))
+source(here::here("src", "LBiCopLLik.R"))
 ```
 
 ```{r, warning=FALSE}
@@ -285,9 +285,9 @@ Cloglik_HETByPair <- ll.T1+ll.T2+ll.T3+ll.T4; Cloglik_HETByPair
 We select a subject with 5 measurements. We pretend that the selected subject has only 4 measurements rather than 5 measurements and predict the conditional $5\%$-, $50\%$- and $95\%$-quantiles in copula scale for its fifth measurement based on the first four measurements. 
 
 ```{r, echo=FALSE}
-# Load the auxiliary functions located in 'R' folder which is
+# Load the auxiliary functions located in 'src' folder which is
 # needed to do the D-vine copula quantile prediction
-source(here::here("SCRIPT", "R", "LDvineQuantile.R"))
+source(here::here("src", "LDvineQuantile.R"))
 ```
 
 ```{r}
@@ -342,13 +342,13 @@ U.quant.HET
 # For a given marginal distribution, we can easily transform the estimated 
 # quantiles from the copula scale to the original scale
 
-# Save the copula prediction results in "OUTPUT" folder 
+# Save the copula prediction results in "results" folder 
 U.quant<-rbind(U.quant.HOM,U.quant.HET)
 rownames(U.quant)<-c("HOM","HET")
 colnames(U.quant)<-c("5%","50%","95%")
 U.quant
 U.sel
 
-write.table(round(U.quant,2),file=here("OUTPUT","copula.quant.txt"))
-write.table(U.sel,file=here("OUTPUT","copula.data.txt"))
+write.table(round(U.quant,2),file=here("results","copula.quant.txt"))
+write.table(U.sel,file=here("results","copula.data.txt"))
 ```

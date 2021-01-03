@@ -44,6 +44,11 @@ that are loaded at the very beginning - if needed).
 
 To start you need to open the project file (LDvine.Rproj) in RStudio which will bring RStudio to the root directory.
 
+## Contact
+
+e-mail: hoqueme@myumanitoba.ca; 
+        elif.acar@umanitoba.ca;
+      	mahmoud.torabi@umanitoba.ca
 
 
 

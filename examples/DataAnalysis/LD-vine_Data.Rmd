@@ -22,8 +22,9 @@ library(condMVNorm) # required for predicting conditional quantiles of
 
 ```{r, cache=TRUE}
 # Load data
-load(here("DATA","Data_MFUS.Rdata")) # 'here' function will specify 
-                                      # the "DATA" folder to load 
+# Note: Because of data confidentiality, the data set file is not included in this R project. 
+load(here("data","Data_MFUS.Rdata")) # 'here' function will specify 
+                                      # the "data" folder to load 
                                       # the required data
 names(MFUS)
 # Maximum number of measurements per individual
@@ -127,11 +128,11 @@ familyset.HOM <- list(c(fam[5,1],fam[5,2],fam[5,3],fam[5,4]),
 To fit the HET--P model, we first calculate time interval between two measurements. The fitted model  gives the estimated values of the model parameters for each pair copula.
 
 ```{r, echo=FALSE}
-# Load the auxiliary functions located in 'R' folder which are 
+# Load the auxiliary functions located in 'src' folder which are 
 # needed to fit the HET-P model
-source(here::here("SCRIPT", "R", "LBiCopFit.R"))
-source(here::here("SCRIPT", "R", "LBiCopLLik.R"))
-source(here::here("SCRIPT", "R", "LDvine.aux.R"))
+source(here::here("src", "LBiCopFit.R"))
+source(here::here("src", "LBiCopLLik.R"))
+source(here::here("src", "LDvine.aux.R"))
 ```
 
 ```{r}
@@ -314,9 +315,9 @@ We select a subject that has 5 measurements. We pretend that the selected subjec
 $95\%$-quantiles for its fifth measurement based on the first four measurements. 
 
 ```{r, echo=FALSE}
-# Load the auxiliary functions located in 'R' folder which is
+# Load the auxiliary functions located in 'src' folder which is
 # needed to do the D-vine copula quantile prediction
-source(here::here("SCRIPT", "R", "LDvineQuantile.R"))
+source(here::here("src", "LDvineQuantile.R"))
 ```
 
 ```{r}
@@ -453,13 +454,13 @@ y_quant.p95 <- qnorm(p = u_quant.p95, mean = X.sel[5, ]%*%b, sd = phi)
 y.quant3<-c(y_quant.p5,y_quant.p50,y_quant.p95)
 y.quant3
 
-# Save the prediction results in "OUTPUT" folder 
+# Save the prediction results in "results" folder 
 # This is the part of result from table 9 (Subject 3) of manuscript.
 y.quant<-rbind(y.quant1,y.quant2,y.quant3)
 rownames(y.quant)<-c("LMM","HOM","HET")
 colnames(y.quant)<-c("5%","50%","95%")
 y.quant;y.sel
 
-write.table(round(y.quant,2),file=here("OUTPUT","y.quant.txt"))
-write.table(y.sel,file=here("OUTPUT","y.sel.txt"))
+write.table(round(y.quant,2),file=here("results","y.quant.txt"))
+write.table(y.sel,file=here("results","y.sel.txt"))
 ```
