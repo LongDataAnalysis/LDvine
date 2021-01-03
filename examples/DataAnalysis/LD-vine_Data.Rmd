@@ -1,0 +1,465 @@
+---
+title: "R-code for 'A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data' "
+author: "*Md Erfanul Hoque, Elif F. Acar and Mahmoud Torabi*"
+output: pdf_document
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The file contains the source code of the analysis of a subset of the Manitoba Follow-up Study data presented in Section 5 of *A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data* by Hoque, Acar and Torabi (2020).
+
+# Load required packages
+```{r, message=FALSE, warning=FALSE}
+library(here) # to specify the folder where something is located in
+library(VineCopula) # required to work with D-vine copulas
+library(nlme) # enables working with linear mixed models (LMMs)
+library(condMVNorm) # required for predicting conditional quantiles of
+                    # multivariate normal distributions
+```
+
+```{r, cache=TRUE}
+# Load data
+load(here("DATA","Data_MFUS.Rdata")) # 'here' function will specify 
+                                      # the "DATA" folder to load 
+                                      # the required data
+names(MFUS)
+# Maximum number of measurements per individual
+d <- max(table(MFUS$id)) 
+d
+n <- length(unique(MFUS[,1]))
+n
+```
+
+# Model fitting
+We fit a linear mixed model (LMM), a time-homogeneous D-vine copula model (HOM--P) and a time-heterogeneous D-vine copula model (HET--P) to the data.
+
+## Linear mixed model (LMM)
+
+```{r}
+# Fit linear mixed model with random intercept and exponential error 
+# correlation structure ; px_age, bmi, IHD as covariates.
+
+LMM.Exp <- lme(DBP ~ px_age+ bmi+ IHD, # formula
+                  data = MFUS, # data
+                  random = ~ 1|id, # grouped random effect
+                  correlation = corExp(form = ~ px_age), # error structure
+                  method = "ML" # estimation method
+)
+summary(LMM.Exp)
+```
+
+## D-vine copula models
+
+For the D-vine copula models HOM--P and HET--P, we use the univariate marginal distribution implied by the fitted linear mixed model. We first transform the observed measurements to copula data using the  distribution functions of $\mathcal{N}(x_{i,j}^\top\eta, \phi^2)$, 
+where $\phi^2 = \mathrm{var}(\gamma_i) + \mathrm{var}(\varepsilon_{i,j})$.
+
+
+### Obtain copula data to fit D-vine copula models
+```{r}
+# Standard deviation of the random effect gamma
+sd.random <- as.numeric(VarCorr(LMM.Exp)[1, 2])
+
+# Standard deviation of the error term epsilon_{i,j}
+sd.error <- as.numeric(VarCorr(LMM.Exp)[2, 2])
+
+# Standard deviation of Y_{i,j}
+phi <- sqrt(sd.error^2 + sd.random^2)
+
+# Transformation of the observations to the copula scale
+u.vec <- pnorm(LMM.Exp$residuals[,1] / phi)
+
+# Matrix to store the information, where unobserved measurements are 
+# denoted by 'NA'.
+U.data <- matrix(NA, n, 5) # copula data matrix
+j <- 0 # auxiliary counter
+
+# For individual i fill the first d_i entries of the ith row in the 
+# matrix U.data with the transformed entries corresponding to the 
+# measurements of individual i
+for (i in 1:n){ 
+  k <- min(5, table(MFUS$id)[i])
+  U.data[i, 1:k] <- u.vec[j + 1:k]
+  j <- j + k
+}
+head(U.data) # show the copula data structure
+```
+
+### Fit time-homogeneous D-vine copula model (HOM--P) to copula data
+
+```{r}
+# Set of candidate families
+family.set <- c(1,3,4,5,13,14)
+
+# D-vine matrix with order 1-2-3-4-5
+Mat<- matrix(c(5,0,0,0,0, 1,4,0,0,0, 2,1,3,0,0, 3,2,1,2,0, 
+               4,3,2,1,1),5,5, byrow=T)
+
+# Fit HOM-P with fixed order 1:5
+Dvine.HOM <- RVineCopSelect(data = U.data, # copula data
+                      Matrix = Mat, # vine structure
+                      familyset = family.set,
+                      selectioncrit = "AIC" # selection criterion
+)
+# The above warning only confirms that the data are unbalanced.
+Dvine.HOM
+
+# Copula log-likelihood value for HOM-P model
+Cloglik_HOMByPair<- sum(Dvine.HOM$pair.logLik);Cloglik_HOMByPair
+
+# Store the copula parameters and families from fitted HOM-P model
+par<-Dvine.HOM$par  
+parset.HOM <-list(c(par[5,1],par[5,2],par[5,3],par[5,4]),
+               c(par[4,1],par[4,2],par[4,3]),
+               c(par[3,1],par[3,2]),
+               c(par[2,1]))
+fam<-Dvine.HOM$family
+familyset.HOM <- list(c(fam[5,1],fam[5,2],fam[5,3],fam[5,4]),
+                   c(fam[4,1],fam[4,2],fam[4,3]),
+                   c(fam[3,1],fam[3,2]),
+                   c(fam[2,1]))
+```
+
+### Fit time-heterogeneous D-vine copula model (HET--P) to copula data
+
+To fit the HET--P model, we first calculate time interval between two measurements. The fitted model  gives the estimated values of the model parameters for each pair copula.
+
+```{r, echo=FALSE}
+# Load the auxiliary functions located in 'R' folder which are 
+# needed to fit the HET-P model
+source(here::here("SCRIPT", "R", "LBiCopFit.R"))
+source(here::here("SCRIPT", "R", "LBiCopLLik.R"))
+source(here::here("SCRIPT", "R", "LDvine.aux.R"))
+```
+
+```{r}
+# Creating the Time variable (px-age) for the analysis of HET-P 
+visit.times <- MFUS[,c(1,3,2)] # extract time variable with corresponding id
+visit.times <- reshape(visit.times, v.names="px_age", timevar="followup",
+                       idvar="id", direction="wide")
+visit.times <- visit.times[,-1] # remove the first column 
+# Data frame of time variable, where unobserved measurements are
+# denoted by 'NA'
+Visits <- data.frame(visit.times) # Final time variable to use in analysis
+head(Visits)
+## BEGIN fitted model 
+# Calculate the time intervals for Tree 1
+t<- sapply(1:(d-1), function(j) Visits[,j+1] - Visits[,j])  
+colnames(t)<-c("t.12","t.23","t.34","t.45")
+t.12<-t[,1];t.23<-t[,2];t.34<-t[,3];t.45<-t[,4]
+
+# Respective ids of available time intervals in Tree 1
+id1 <-sapply(1:(d-1), function(j) which(complete.cases(t[,j])))
+id12<-id1[[1]];id23<-id1[[2]];id34<-id1[[3]];id45<-id1[[4]]
+
+# Estimation of model parameters of pair copulas in Tree 1
+fit<- sapply(1:(d-1), function(j) LBiCopFit(u1=U.data[,j], u2=U.data[,j+1], 
+          x=t[,j],family=family.set,repar="pearson",start = c(0.01,0.01)))
+
+fit.beta.T1<- sapply(1:(d-1), function(j) c(fit[1,j],fit[2,j])) 
+ll.T1<-sum(unlist(fit[3,])) #loglikelihood value in Tree 1
+fam.T1<-fit[4,] # selected family of pair copulas in Tree 1
+
+tau.T1<- sapply(1:(d-1), function(j) LDVine.rho2tau(unlist(fit.beta.T1[,j]),
+                                                    t[,j][id1[[j]]]))
+par.T1<- sapply(1:(d-1), function(j) BiCopTau2Par(fam.T1[[j]], tau.T1[[j]]))
+
+# Obtain the pseudo-conditional marginals for Tree 2
+vv<-list()
+for (j in 1:(d-2)){
+  vv[[j]] <- BiCopHfunc2(u1=U.data[,j][id1[[j]]],u2=U.data[,j+1][id1[[j]]],
+                                 par.T1[[j]],family = fam.T1[[j]])
+  vv[[(d-2)+j]] <- BiCopHfunc2(u1=U.data[,j+2][id1[[j+1]]],
+           u2=U.data[,j+1][id1[[j+1]]],par.T1[[j+1]],family = fam.T1[[j+1]])
+}
+# Store pseudo-conditional marginals with respective ids
+vv1.2 <-data.frame(id1[[1]],vv[[1]])
+vv3.2 <-data.frame(id1[[2]],vv[[4]])
+vv2.3 <-data.frame(id1[[2]],vv[[2]])
+vv4.3 <-data.frame(id1[[3]],vv[[5]])
+vv3.4 <-data.frame(id1[[3]],vv[[3]])
+vv5.4 <-data.frame(id1[[4]],vv[[6]])
+
+# Calculate the time intervals for Tree 2
+t<- sapply(1:(d-2), function(j) Visits[,j+2] - Visits[,j])  
+t.13.2<-t[,1];t.24.3<-t[,2];t.35.4<-t[,3]
+
+# Respective ids of available time intervals in Tree 2
+id2 <-sapply(1:(d-2), function(j) which(complete.cases(t[,j])))
+id13.2<-id2[[1]];id24.3<-id2[[2]];id35.4<-id2[[3]]
+
+# List of available conditional data needed for estimation in Tree 2
+condata1 <- list(vv1.2[id12%in%id13.2,2],vv3.2[id23%in%id13.2,2],
+                vv2.3[id23%in%id24.3,2],vv4.3[id34%in%id24.3,2],
+                vv3.4[id34%in%id35.4,2],vv5.4[id45%in%id35.4,2])
+
+# Estimation of model parameters of pair copulas in Tree 2
+fit<- sapply(1:(d-2), function(j) LBiCopFit(u1 = condata1[[2*j-1]], 
+                u2 = condata1[[2*j]], x=t[,j][id2[[j]]],family=family.set,
+                repar="pearson",start = c(0.01,0.01)))
+
+fit.beta.T2<- sapply(1:(d-2), function(j) c(fit[1,j],fit[2,j])) 
+ll.T2<-sum(unlist(fit[3,])) #loglikelihood value in Tree 2
+fam.T2<-fit[4,] # selected family of pair copulas in Tree 2
+
+tau.T2<- sapply(1:(d-2), function(j) LDVine.rho2tau(unlist(fit.beta.T2[,j]),
+                                                    t[,j][id2[[j]]]))
+par.T2<- sapply(1:(d-2), function(j) BiCopTau2Par(fam.T2[[j]], tau.T2[[j]]))
+
+# Obtain the pseudo-conditional marginals for Tree 3
+vvv<-list()
+for (j in 1:(d-3)){
+  vvv[[j]] <- BiCopHfunc2(u1=condata1[[2*j-1]], u2=condata1[[2*j]],
+                                 par.T2[[j]],family = fam.T2[[j]])
+  vvv[[(d-3)+j]] <- BiCopHfunc2(u1=condata1[[2*j+2]], u2=condata1[[2*j+1]],
+                                 par.T2[[j+1]],family = fam.T2[[j+1]])
+}
+# Store pseudo-conditional marginals with respective ids
+vvv1.23 <-data.frame(id2[[1]],vvv[[1]])
+vvv4.23 <-data.frame(id2[[2]],vvv[[3]])
+vvv2.34 <-data.frame(id2[[2]],vvv[[2]])
+vvv5.34 <-data.frame(id2[[3]],vvv[[4]])
+
+# Calculate the time intervals for Tree 3
+t<- sapply(1:(d-3), function(j) Visits[,j+3] - Visits[,j])  
+t.14.23<-t[,1];t.25.34<-t[,2]
+
+# Respective ids of available time intervals in Tree 3
+id3 <-sapply(1:(d-3), function(j) which(complete.cases(t[,j])))
+id14.23<-id3[[1]];id25.34<-id3[[2]]
+
+# List of available conditional data needed for estimation in Tree 3
+condata2 <- list(vvv1.23[id13.2%in%id14.23,2],vvv4.23[id24.3%in%id14.23,2],
+                 vvv2.34[id24.3%in%id25.34,2],vvv5.34[id35.4%in%id25.34,2])
+
+# Estimation of model parameters of pair copulas in Tree 3
+fit<- sapply(1:(d-3), function(j) LBiCopFit(u1 = condata2[[2*j-1]], 
+                u2 = condata2[[2*j]], x=t[,j][id3[[j]]], family=family.set,
+                repar="pearson",start = c(0.01,0.01)))
+
+fit.beta.T3<- sapply(1:(d-3), function(j) c(fit[1,j],fit[2,j])) 
+ll.T3<-sum(unlist(fit[3,])) #loglikelihood value in Tree 3
+fam.T3<-fit[4,] # selected family of pair copulas in Tree 3
+
+tau.T3<- sapply(1:(d-3), function(j) LDVine.rho2tau(unlist(fit.beta.T3[,j]),
+                                                    t[,j][id3[[j]]]))
+par.T3<- sapply(1:(d-3), function(j) BiCopTau2Par(fam.T3[[j]], tau.T3[[j]]))
+
+# Obtain the pseudo-conditional marginals for Tree 4
+vvvv<-list()
+for (j in 1:(d-4)){
+  vvvv[[j]] <- BiCopHfunc2(u1=condata2[[2*j-1]], u2=condata2[[2*j]],
+                                 par.T3[[j]],family = fam.T3[[j]])
+  vvvv[[(d-4)+j]] <- BiCopHfunc2(u1=condata2[[2*j+2]], u2=condata2[[2*j+1]],
+                                 par.T3[[j+1]],family = fam.T3[[j+1]])
+}
+# Store pseudo-conditional marginals with respective ids
+vvvv1.234 <-data.frame(id3[[1]],vvvv[[1]])
+vvvv5.234 <-data.frame(id3[[2]],vvvv[[2]])
+
+# Calculate the time intervals for Tree 4
+t<- sapply(1:(d-4), function(j) Visits[,j+4] - Visits[,j])  
+t.15.234<-t[,1]
+
+# Respective ids of available time intervals in Tree 4
+id4 <-sapply(1:(d-4), function(j) which(complete.cases(t[,j])))
+id15.234<-id4[,1]
+
+# List of available conditional data needed for estimation in Tree 4
+condata3 <- list(vvvv1.234[id14.23%in%id15.234,2],
+                 vvvv5.234[id25.34%in%id15.234,2])
+
+# Estimation of copula parameters of pair copulas in Tree 4
+fit<- sapply(1:(d-4), function(j) LBiCopFit(u1 = condata3[[2*j-1]],
+               u2 = condata3[[2*j]], x=t[,j][id4[,j]], family=family.set,
+               repar="pearson",start = c(0.01,0.01)))
+
+fit.beta.T4<- sapply(1:(d-4), function(j) c(fit[1,j],fit[2,j])) 
+ll.T4<-sum(unlist(fit[3,])) #loglikelihood value in Tree 4
+fam.T4<-fit[4,] # selected family of pair copulas in Tree 4
+
+tau.T4<- sapply(1:(d-4), function(j) LDVine.rho2tau(unlist(fit.beta.T4[,j]),
+                                                    t[,j][id4[,j]]))
+par.T4<- sapply(1:(d-4), function(j) BiCopTau2Par(fam.T4[[j]], tau.T4[,j]))
+
+## END fitted model 
+
+# Store parameter estimates
+beta.fit <-list(fit.beta.T1,fit.beta.T2,fit.beta.T3,fit.beta.T4)
+
+# Store the selected copula families
+family.selected<-data.frame(fam.T1,fam.T2,fam.T3,fam.T4)
+colnames(family.selected)<-c("fam.T1","fam.T1","fam.T1","fam.T1",
+                             "fam.T2","fam.T2","fam.T2",
+                             "fam.T3","fam.T3","fam.T4")
+family.selected
+
+# Copula log-likelihood value for HET-P model
+Cloglik_HETByPair <- ll.T1+ll.T2+ll.T3+ll.T4; Cloglik_HETByPair
+
+# Store the copula parameters and families for quantile prediction
+par.fit.HET <- list(par.T1,par.T2,par.T3,par.T4)
+
+fam <- unlist(family.selected)
+familyset.HET <- list(c(fam[1],fam[2],fam[3],fam[4]),
+                  c(fam[5],fam[6],fam[7]),
+                  c(fam[8],fam[9]),c(fam[10])) 
+```
+
+# Conditional Quantile Prediction
+
+We select a subject that has 5 measurements. We pretend that the selected subject has only 4 measurements rather than 5 measurements and predict the conditional $5\%$-, $50\%$- and 
+$95\%$-quantiles for its fifth measurement based on the first four measurements. 
+
+```{r, echo=FALSE}
+# Load the auxiliary functions located in 'R' folder which is
+# needed to do the D-vine copula quantile prediction
+source(here::here("SCRIPT", "R", "LDvineQuantile.R"))
+```
+
+```{r}
+# id of selected individual and corresponding vector of measurements
+id.sel <- 453
+y.sel <- MFUS[MFUS$id == id.sel, 6]
+y.sel
+
+# Covariate matrix (including intercept)
+X.sel <- cbind(1, as.matrix(MFUS[MFUS$id == id.sel, c(3, 4, 5)]))
+# Time variable for selected id
+time.sel<- MFUS[MFUS$id==id.sel, 3]
+
+# Estimated covariate vector of the fixed effects 
+b <- LMM.Exp$coefficients$fixed
+
+# Quantile levels to be estimated
+alpha.level <- c(0.05, 0.5, 0.95)
+```
+
+## Linear Mixed Model (LMM)
+
+Since $\mathbf{y}_i = (y_{i,1}, y_{i,2}, y_{i,3}, y_{i,4}, y_{i,5})^{\top}$ is assumed to be normally distributed, the univariate conditional distribution of $y_{i,5}$ given 
+$(y_{i,1}, y_{i,2}, y_{i,3}, y_{i,4})^{\top}$ is univariate normal with a certain mean 
+and variance depending on the parameters of the distribution of $\mathbf{y}_i$. 
+Therefore, we first extract the covariance structure of the linear mixed model.
+
+```{r}
+# Range coefficient
+Range.par <- as.numeric(coef(LMM.Exp$modelStruct$corStruct, 
+                         unconstrained = FALSE))
+# Extract covariance matrix of the distribution of y_i = (y_{i,1}, y_{i,2}, 
+                                            # y_{i,3}, y_{i,4}, y_{i,5})'
+d <- 5
+Var.mat <- matrix(0, d , d)
+
+for (i in 1:d){
+  for (j in 1:d){
+    Var.mat[i, j] <- exp(- abs(i-j)/Range.par)
+  }
+}
+Var.mat <- Var.mat*sd.error^2 + sd.random^2
+
+# Compute parameters of the conditional distribution of y_{i_5} given 
+# (y_{i,1}, y_{i,2}, y_{i,3}, y_{i,4})'
+cond.param <- condMVN(mean = X.sel%*%b, 
+                      sigma = Var.mat, 
+                      dependent.ind = 1, 
+                      given.ind = 2:5, 
+                      X.given = y.sel[1:(d - 1)],
+                      check.sigma = TRUE)
+
+mu.cond <- cond.param$condMean # mean
+sigma.cond <- sqrt(cond.param$condVar) # standard deviation
+
+# Determine conditional quantiles for LMM
+y.quant1 <- qnorm(alpha.level, mean = mu.cond, sd = sigma.cond)
+y.quant1
+```
+
+## D-vine based copula models
+
+For the D-vine copula models HOM--P and HET--P, we first transform the measurements to the uniform scale using the probability integral transformation. After that we calculate the D-vine quantile of the fifth measurement on the copula scale and then finally we transform these predictions to the original scale using the marginal quantile function of the fifth measurement. 
+
+```{r}
+u1.sel <- pnorm(q = y.sel[1], mean = X.sel[1, ]%*%b, sd = phi)
+u2.sel <- pnorm(q = y.sel[2], mean = X.sel[2, ]%*%b, sd = phi)
+u3.sel <- pnorm(q = y.sel[3], mean = X.sel[3, ]%*%b, sd = phi)
+u4.sel <- pnorm(q = y.sel[4], mean = X.sel[4, ]%*%b, sd = phi)
+```
+
+### Time-homogeneous D-vine copula model (HOM--P)
+
+```{r}
+# Calculate the quantiles on the coupla scale
+u_quant.p5 <-  DvineQuant (p = alpha.level[1], u = data.frame(u1.sel, 
+                    u2.sel, u3.sel, u4.sel), family.set = familyset.HOM, 
+                    par.set = parset.HOM)
+u_quant.p50 <- DvineQuant (p = alpha.level[2], u = data.frame(u1.sel, 
+                    u2.sel, u3.sel, u4.sel), family.set = familyset.HOM, 
+                    par.set = parset.HOM)
+u_quant.p95 <- DvineQuant (p = alpha.level[3], u = data.frame(u1.sel, 
+                    u2.sel, u3.sel, u4.sel), family.set = familyset.HOM, 
+                    par.set = parset.HOM)
+# Transform the estimated quantiles from the copula scale to the 
+# original scale
+y_quant.p5 <- qnorm(p = u_quant.p5, mean = X.sel[5, ]%*%b, sd = phi)
+y_quant.p50 <- qnorm(p = u_quant.p50, mean = X.sel[5, ]%*%b, sd = phi)
+y_quant.p95 <- qnorm(p = u_quant.p95, mean = X.sel[5, ]%*%b, sd = phi)
+
+y.quant2<-c(y_quant.p5,y_quant.p50,y_quant.p95)
+y.quant2
+```
+
+### Time-heterogeneous D-vine copula model (HET--P)
+
+```{r}
+# Estimated copula parameters from fitted HET-P model 
+par.id <- sapply(1:(d-1), function(j) which(id1[[j]] == id.sel))
+par.T1 <- sapply(1:(d-1), function(j) par.T1[[j]][par.id[j]])
+
+par.id <- sapply(1:(d-2), function(j) which(id2[[j]] == id.sel))
+par.T2 <- sapply(1:(d-2), function(j) par.T2[[j]][par.id[j]])
+
+par.id <- sapply(1:(d-3), function(j) which(id3[[j]] == id.sel))
+par.T3 <- sapply(1:(d-3), function(j) par.T3[[j]][par.id[j]])
+
+par.id <- sapply(1:(d-4), function(j) which(id4[,j] == id.sel))
+par.T4 <- sapply(1:(d-4), function(j) par.T4[,j][par.id[j]])
+
+# Store the estimated copula parameters from fitted HET-P model
+parset.HET = list(par.T1, par.T2, par.T3,par.T4)
+```
+
+
+```{r}
+# Calculate the quantiles on the coupla scale
+u_quant.p5 <- DvineQuant (p = alpha.level[1], u = data.frame(u1.sel, 
+                   u2.sel, u3.sel, u4.sel), family.set = familyset.HET, 
+                   par.set = parset.HET)
+u_quant.p50 <- DvineQuant (p = alpha.level[2], u = data.frame(u1.sel, 
+                   u2.sel, u3.sel, u4.sel), family.set = familyset.HET,
+                   par.set = parset.HET)
+u_quant.p95 <- DvineQuant (p = alpha.level[3], u = data.frame(u1.sel, 
+                   u2.sel, u3.sel, u4.sel), family.set = familyset.HET, 
+                   par.set = parset.HET)
+
+# Transform the estimated quantiles from the copula scale to the 
+# original scale
+y_quant.p5 <- qnorm(p = u_quant.p5, mean = X.sel[5, ]%*%b, sd = phi)
+y_quant.p50 <- qnorm(p = u_quant.p50, mean = X.sel[5, ]%*%b, sd = phi)
+y_quant.p95 <- qnorm(p = u_quant.p95, mean = X.sel[5, ]%*%b, sd = phi)
+
+y.quant3<-c(y_quant.p5,y_quant.p50,y_quant.p95)
+y.quant3
+
+# Save the prediction results in "OUTPUT" folder 
+# This is the part of result from table 9 (Subject 3) of manuscript.
+y.quant<-rbind(y.quant1,y.quant2,y.quant3)
+rownames(y.quant)<-c("LMM","HOM","HET")
+colnames(y.quant)<-c("5%","50%","95%")
+y.quant;y.sel
+
+write.table(round(y.quant,2),file=here("OUTPUT","y.quant.txt"))
+write.table(y.sel,file=here("OUTPUT","y.sel.txt"))
+```
