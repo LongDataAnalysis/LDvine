@@ -1,18 +1,16 @@
 ###############################################################################################################
-
 Title: A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data
-
 Authors: Md. Erfanul Hoque, Elif F. Acar and Mahmoud Torabi
-
 Emails: hoqueme@myumanitoba.ca
-
-	      elif.acar@umanitoba.ca
-
-	      mahmoud.torabi@umanitoba.ca
+	elif.acar@umanitoba.ca
+	mahmoud.torabi@umanitoba.ca
 
 Date: March, 2020
-
 ###############################################################################################################
+
+# LDvine
+
+This repository contains the scripts, results, and manuscript for the project "A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data".
 
 The RStudio project file is in the root directory with the extension .Rproj. 
 
@@ -22,8 +20,9 @@ To start you need to open the project file (LDvine.Rproj) in RStudio which will 
 
 The RStudio project file (.Rproj) contains the following sub-folders:
 
+The repository is structured as follows:
 
-1. data: csv/rda/rds/txt files that are used as data into R in order to do the analysis. 
+-`data`: Contains csv/rda/rds/txt files that are used as data into R in order to do the analysis. 
 
 	We used a subset of Manitoba Follow-up Study (MFUS) data. Because of data confidentiality, the data set file is not included in this R project. 
 
@@ -53,30 +52,27 @@ The RStudio project file (.Rproj) contains the following sub-folders:
 
 
 
-2. src: This folder contains R functions (.R) that implement the methods in this R project. 
+- `src`: Contains R functions (.R) that implement the methods in this R project. 
 
 
-3. examples: contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains several sub-folders:	
+- `examples`: Contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains several sub-folders:	
 
-	a. Simulation: this sub-folder contains .Rmd files with the complied pdf versions for simulation study.
-
-	     - RMarkdown files: The R-code for the simulation example is in the R Markdown file "LD-vine_Sim.Rmd" 
+	- `Simulation`: this sub-folder contains .Rmd files with the complied pdf versions for simulation study.
+RMarkdown files: The R-code for the simulation example is in the R Markdown file "LD-vine_Sim.Rmd" 
 (use RStudio for opening/modifying/compiling). The compiled version is available as a pdf ("LD-vine_Sim.pdf"). 
-
-			        The code is commented and directly evaluated (see "LD-vine_Sim.pdf"). 
-				To reproduce the simulated example,  simply run the R code line by line (after having installed all R-packages 
-
-			        that are loaded at the very beginning - if needed).
+The code is commented and directly evaluated (see "LD-vine_Sim.pdf"). 
+To reproduce the simulated example,  simply run the R code line by line (after having installed all R-packages 
+that are loaded at the very beginning - if needed).
 
 	
 
-	b. Data Analysis: this sub-folder contains the data application code in RMarkdown. Only the complied version is available as a pdf file ("LD-vine_Data.pdf"), which includes the partial results of data analysis presented in Section 5 of manuscript.
+	- `Data Analysis`: this sub-folder contains the data application code in RMarkdown. Only the complied version is available as a pdf file ("LD-vine_Data.pdf"), which includes the partial results of data analysis presented in Section 5 of manuscript.
 
-			  However, since the real data is not provided because of data confidentiality, this RMarkdown file is not reproducible.   
+**Note**: However, since the real data is not provided because of data confidentiality, this RMarkdown file is not reproducible.   
 
 
 
-4. results: Save all printed project outputs here, including plots, HTML, and data exports.
+- `results`: Save all printed project outputs here, including plots, HTML, and data exports.
 
 
 
