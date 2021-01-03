@@ -1,15 +1,3 @@
-####################################################################################
-Title: A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data
-
-Authors: Md. Erfanul Hoque, Elif F. Acar and Mahmoud Torabi
-
-Emails: hoqueme@myumanitoba.ca; 
-	elif.acar@umanitoba.ca; 
-	mahmoud.torabi@umanitoba.ca
-
-Date: March, 2020
-####################################################################################
-
 # LDvine
 
 This repository contains the scripts, data, results, and examples for the project "A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data".
