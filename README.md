@@ -1,9 +1,12 @@
 #####################################################################################################
 Title: A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data
+
 Authors: Md. Erfanul Hoque, Elif F. Acar and Mahmoud Torabi
+
 Emails: hoqueme@myumanitoba.ca; 
 	elif.acar@umanitoba.ca; 
 	mahmoud.torabi@umanitoba.ca
+	
 Date: March, 2020
 #####################################################################################################
 
@@ -44,8 +47,7 @@ RMarkdown files: The R-code for the simulation example is in the R Markdown file
 The code is commented and directly evaluated (see "LD-vine_Sim.pdf"). 
 To reproduce the simulated example,  simply run the R code line by line (after having installed all R-packages 
 that are loaded at the very beginning - if needed).
-	- `Data Analysis`: this sub-folder contains the data application code in RMarkdown. Only the complied version is available as a pdf file ("LD-vine_Data.pdf"), which includes the partial results of data analysis presented in Section 5 of manuscript.
-**Note**: However, since the real data is not provided because of data confidentiality, this RMarkdown file is not reproducible.   
+	- `Data Analysis`: this sub-folder contains the data application code in RMarkdown. Only the complied version is available as a pdf file ("LD-vine_Data.pdf"), which includes the partial results of data analysis presented in Section 5 of manuscript. However, since the real data is not provided because of data confidentiality, this RMarkdown file is not reproducible.   
 
 - `results`: Save all printed project outputs here, including plots, HTML, and data exports.
 
