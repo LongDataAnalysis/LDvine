@@ -1,5 +1,4 @@
-# LDvine
-Longitudinal D-vine copula model
+# LDvine: Longitudinal D-vine copula model
 
 The codes in this repository implement time-heterogeneous D-vine model (HET--P) presented in the paper 
 
