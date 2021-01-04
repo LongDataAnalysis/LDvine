@@ -50,8 +50,8 @@ To start you need to open the project file (LDvine.Rproj) in RStudio which will 
 
 ## Contact
 
-e-mail: hoqueme@myumanitoba.ca; 
-        elif.acar@umanitoba.ca;
+e-mail: hoqueme@myumanitoba.ca, 
+        elif.acar@umanitoba.ca,
       	mahmoud.torabi@umanitoba.ca
 
 
