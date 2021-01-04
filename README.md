@@ -32,11 +32,7 @@ The repository is structured as follows:
 
 - `examples`: Contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains two sub-folders:	
 
-	- `Simulation`: this sub-folder contains .Rmd files with the complied pdf versions for simulation study.
-RMarkdown files: The R-code for the simulation example is in the R Markdown file "LD-vine_Sim.Rmd" 
-(use RStudio for opening/modifying/compiling). The compiled version is available as a pdf ("LD-vine_Sim.pdf"). 
-The code is commented and directly evaluated (see "LD-vine_Sim.pdf"). 
-To reproduce the simulated example,  simply run the R code line by line (after having installed all R-packages that are loaded at the very beginning - if needed).
+	- `Simulation`: this sub-folder contains .Rmd files with the complied pdf versions for simulation study. The R-code for the simulation example is in the R Markdown file "LD-vine_Sim.Rmd" (use RStudio for opening/modifying/compiling). The compiled version is available as a pdf ("LD-vine_Sim.pdf"). The code is commented and directly evaluated (see "LD-vine_Sim.pdf"). To reproduce the simulated example,  simply run the R code line by line (after having installed all R-packages that are loaded at the very beginning - if needed).
 	- `Data Analysis`: this sub-folder contains the data application code in RMarkdown. Only the complied version is available as a pdf file ("LD-vine_Data.pdf"), which includes the partial results of data analysis presented in Section 5 of manuscript. However, since the real data is not provided because of data confidentiality, this RMarkdown file is not reproducible.   
 
 - `results`: Save all printed project outputs here, including plots, HTML, and data exports.
