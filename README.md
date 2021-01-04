@@ -28,7 +28,7 @@ The repository is structured as follows:
 
 	Finally, the data set has 462 subjects with at most 5 follow-ups. In total, the data has 1713 rows and 6 columns.
 
-- `src`: Contains R functions (.R) that implement the methods in this R project. 
+- `src`: Contains R functions (.R) that implement the methods in this paper. 
 
 - `examples`: Contains RMarkdown (.Rmd) files with the complied pdf versions. This folder contains two sub-folders:	
 
