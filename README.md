@@ -41,6 +41,10 @@ The repository is structured as follows:
 
 To start you need to open the project file (LDvine.Rproj) in RStudio which will bring RStudio to the root directory.
 
+## References
+
+- Hoque, M.E., Acar, E.F. and Torabi, M. (2022), A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data. Biometrics. Accepted Author Manuscript. https://doi.org/10.1111/biom.13652
+
 ## Contact
 
 e-mail: hoqueme@myumanitoba.ca, 
