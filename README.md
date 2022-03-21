@@ -2,7 +2,7 @@
 
 The codes in this repository implement time-heterogeneous D-vine model (HET--P) presented in the paper 
 
-**Hoque, M. E., Acar, E. F., and Torabi, M. (2020). A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data.**
+**Hoque, M. E., Acar, E. F., and Torabi, M. (2020). A time-heterogeneous D-vine copula model for unbalanced and unequally spaced longitudinal data. _Biometrics_.**
 #
 The repository is structured as follows:
 
